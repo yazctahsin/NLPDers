@@ -6,11 +6,13 @@ ve sonuçları tablolar halinde gösterir.
 """
 
 import os
+import sys
+import re
 import sqlite3
 from openai import OpenAI
 from tabulate import tabulate
 from dotenv import load_dotenv
-from setup_database import get_schema
+from setup_database import get_schema, create_database
 
 # .env dosyasından API anahtarını yükle
 load_dotenv()
@@ -124,12 +126,25 @@ def validate_query(sql_query: str) -> bool:
     """
     # Tehlikeli anahtar kelimeleri kontrol et
     dangerous_keywords = ['INSERT', 'UPDATE', 'DELETE', 'DROP', 'CREATE', 
-                          'ALTER', 'TRUNCATE', 'EXEC', 'EXECUTE']
+                          'ALTER', 'TRUNCATE', 'EXEC', 'EXECUTE', 'ATTACH',
+                          'DETACH', 'PRAGMA', 'VACUUM', 'REINDEX']
     
     upper_query = sql_query.upper()
     
+    # Birden fazla statement kontrolü (SQL injection koruması)
+    # Sorgu içinde noktalı virgül varsa ve SELECT dışında komut olabilir
+    if ';' in sql_query:
+        # Noktalı virgülden sonra boşluk dışında karakter varsa reddet
+        parts = sql_query.split(';')
+        for i, part in enumerate(parts[:-1]):  # Son parça hariç
+            next_part = parts[i + 1].strip()
+            if next_part and not next_part.startswith('--'):
+                return False
+    
     for keyword in dangerous_keywords:
-        if keyword in upper_query:
+        # Kelime sınırlarını kontrol et
+        pattern = r'\b' + keyword + r'\b'
+        if re.search(pattern, upper_query):
             return False
     
     # SELECT ile başlamalı
@@ -277,12 +292,9 @@ def interactive_mode():
 
 def main():
     """Ana giriş noktası."""
-    import sys
-    
     # Veritabanını kontrol et, yoksa oluştur
     if not os.path.exists('sales.db'):
         print("Veritabanı bulunamadı, oluşturuluyor...")
-        from setup_database import create_database
         create_database()
     
     # Komut satırı argümanlarını kontrol et

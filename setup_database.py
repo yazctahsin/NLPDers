@@ -134,7 +134,10 @@ def create_database():
         
         # Ürün fiyatını al
         cursor.execute('SELECT fiyat FROM urunler WHERE id = ?', (urun_id,))
-        fiyat = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if result is None:
+            continue  # Ürün bulunamadıysa bu satışı atla
+        fiyat = result[0]
         toplam_tutar = fiyat * miktar
         
         # Son 90 gün içinde rastgele bir tarih
