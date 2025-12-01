@@ -1,0 +1,21 @@
+# Generated database files
+*.db
+
+# Environment variables
+.env
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE files
+.idea/
+.vscode/
+*.swp
+*.swo
